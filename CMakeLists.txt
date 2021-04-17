@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.19)
+project(SimpleNetworking)
+set(CMAKE_CXX_STANDARD 20)
+include_directories(/usr/local/include)
+include_directories(NetCommon)
+add_executable(SimpleNetworking main.cpp NetClient/SimpleClient.cpp NetCommon/blcl_net.h)
+
+project(NetCommon)
+set(CMAKE_CXX_STANDARD 20)
+include_directories(/usr/local/include)
+#add_library(NetCommon NetCommon/net_common.h NetCommon/net_message.h)
+
+project(SimpleClient)
+set(CMAKE_CXX_STANDARD 20)
+include_directories(/usr/local/include)
+include_directories(NetCommon)
+add_executable(SimpleClient NetClient/SimpleClient.cpp NetCommon/blcl_net.h)
+
+project(SimpleServer)
+set(CMAKE_CXX_STANDARD 20)
+include_directories(/usr/local/include)
+include_directories(NetCommon)
+add_executable(SimpleServer NetServer/SimpleServer.cpp NetCommon/blcl_net.h)
