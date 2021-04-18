@@ -20,13 +20,18 @@ public:
         msg << now;
         send(msg);
     }
+
+    void send_message_to_all() {
+        blcl::net::message<MsgType> msg;
+        msg.header.id = MsgType::MessageAll;
+        send(msg);
+    }
 };
 
 int main() {
     CustomClient c;
     c.connect("127.0.0.1", 60000);
-    std::cout << "[INFO] Sending a ping..." << std::endl;
-    c.ping_server();
+
 //    std::cout << "[INFO] Sending a ping..." << "\n";
 //    c.ping_server();
 //    std::cout << "[INFO] Sending a ping..." << "\n";
@@ -41,17 +46,28 @@ int main() {
                     auto msg = c.get_incoming_messages().pop_front().msg;
 
                     switch (msg.header.id) {
-                        case MsgType::ServerPing:
+                        case MsgType::ServerAccept: {
+                            std::cout << "[INFO] Server has accepted a connection.\n";
+                            break;
+                        }
+                        case MsgType::ServerPing: {
                             std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
                             std::chrono::system_clock::time_point sent;
                             msg >> sent;
-                            std::chrono::duration<double> elapsed = now - sent;
-                            std::cout << "Ping: " << elapsed.count() << std::endl;
+                            std::cout << "[INFO] Ping: " << std::chrono::duration<double, std::milli>(now - sent).count()
+                                      << " ms\n";
                             break;
+                        }
+                        case MsgType::ServerMessage: {
+                            uint32_t client_id;
+                            msg >> client_id;
+                            std::cout << "[INFO] Hello from client " << client_id << "\n";
+                            break;
+                        }
                     }
                 }
             } else {
-                std::cout << "[WARN] Server is going down..." << std::endl;
+                std::cout << "[WARN] Server is going down..." << "\n";
                 will_quit = true;
             }
         }
@@ -59,7 +75,10 @@ int main() {
 
     while (!will_quit) {
         int a; std::cin >> a;
-        c.ping_server();
+        if (a == 1)
+            c.ping_server();
+        if (a == 2)
+            c.send_message_to_all();
     }
     if (thread.joinable())
         thread.join();

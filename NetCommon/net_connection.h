@@ -7,6 +7,9 @@
 
 namespace blcl::net {
     template<typename T>
+    class server_interface;
+
+    template<typename T>
     class connection: public std::enable_shared_from_this<connection<T>> {
     public:
         enum class owner {
@@ -17,18 +20,30 @@ namespace blcl::net {
         connection(owner parent, asio::io_context& asio_context, asio::ip::tcp::socket socket, tsqueue<owned_message<T>>& incoming_messages)
             : asio_context_(asio_context), socket_(std::move(socket)), incoming_messages_(incoming_messages),
             owner_type_(parent)
-        {}
-        virtual ~connection() {}
+        {
+            owner_type_ = parent;
+            if (owner_type_ == owner::server) {
+                checksum_out_ = uint64_t(std::chrono::system_clock::now().time_since_epoch().count());
+                expected_checksum_ = encode(checksum_out_);
+            } else {
+                checksum_in_ = 0;
+                checksum_out_ = 0;
+            }
+
+        }
+        virtual ~connection() = default;
 
         uint32_t get_id() const {
             return id;
         }
 
-        void connect_to_client(uint32_t uid = 0) {
+        void connect_to_client(blcl::net::server_interface<T>* server, uint32_t uid = 0) {
             if (owner_type_ == owner::server) {
                 if (socket_.is_open()) {
                     id = uid;
-                    read_header();
+                    write_validation();
+                    read_validation(server);
+//                    read_header();
                 }
             }
         }
@@ -36,9 +51,10 @@ namespace blcl::net {
         void connect_to_server(const asio::ip::tcp::resolver::results_type& endpoints) {
             if (owner_type_ == owner::client) {
                 asio::async_connect(socket_, endpoints,
-                    [this](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
+                    [this](std::error_code ec, const asio::ip::tcp::endpoint& endpoint) {
                         if (!ec) {
-                            read_header();
+//                            read_header();
+                            read_validation();
                         }
                 });
             }
@@ -141,6 +157,55 @@ namespace blcl::net {
 
             read_header();
         }
+
+        uint64_t encode(uint64_t bin) {
+            auto* slice = reinterpret_cast<uint8_t *>(&bin);
+            for (int i = 0; i < sizeof(bin) / sizeof(uint8_t); i++) {
+                slice[i] = (slice[i] << 3 | slice[i] >> 5);
+                slice[i] = -(slice[i] ^ uint8_t(0xAF));
+            }
+            return bin;
+        }
+
+        // async
+        void write_validation() {
+            asio::async_write(socket_, asio::buffer(&checksum_out_, sizeof(uint64_t)),
+                [this](std::error_code ec, std::size_t length) {
+                    if (!ec) {
+                        if (owner_type_ == owner::client)
+                            read_header();
+                    } else {
+                        socket_.close();
+                    }
+            });
+        }
+
+        // async
+        void read_validation(blcl::net::server_interface<T>* server = nullptr) {
+            asio::async_read(socket_, asio::buffer(&checksum_in_, sizeof(uint64_t)),
+                [this, server](std::error_code ec, std::size_t length) {
+                    if (!ec) {
+                        if (owner_type_ == owner::server) {
+                            if (checksum_in_ == expected_checksum_) {
+                                std::cout << "[INFO] Challenge-response passed." << std::endl;
+                                server->on_client_validated(this->shared_from_this());
+
+                                read_header();
+                            } else {
+                                std::cout << "[WARN] Client disconnected: challenge-reponse failed." << std::endl;
+                                socket_.close();
+                            }
+                        } else {
+                            checksum_out_ = encode(checksum_in_);
+                            write_validation();
+                        }
+                    } else {
+                        std::cout << "[WARN] Client disconnected on reading challenge-response." << std::endl;
+                        socket_.close();
+                    }
+            });
+        }
+
     protected:
         asio::ip::tcp::socket socket_;
         asio::io_context& asio_context_;
@@ -149,6 +214,10 @@ namespace blcl::net {
         message<T> current_incoming_message_;
         owner owner_type_ = owner::server;
         uint32_t id = 0;
+
+        uint64_t checksum_out_ = 0;
+        uint64_t checksum_in_ = 0;
+        uint64_t expected_checksum_ = 0;
     };
 }
 

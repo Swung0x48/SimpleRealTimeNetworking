@@ -16,7 +16,6 @@ namespace blcl::net {
 
         size_t size() const {
             return body.size();
-//            return sizeof(message_header<T>) + body.size();
         }
 
         friend std::ostream& operator<<(std::ostream& os, const message<T>& msg) {

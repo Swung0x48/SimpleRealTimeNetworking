@@ -54,7 +54,7 @@ namespace blcl::net {
 
                             if (on_client_connect(new_connection)) {
                                 connections_.push_back(std::move(new_connection));
-                                connections_.back()->connect_to_client(id_counter_++);
+                                connections_.back()->connect_to_client(this, id_counter_++);
                                 std::cout << "[INFO] Connection established. Connection ID: " << connections_.back()->get_id() << '\n';
                             } else {
                                 std::cout << "[WARN] Client disconnected.\n";
@@ -98,7 +98,10 @@ namespace blcl::net {
                         std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
         }
 
-        void update(size_t max_message_count = -1) {
+        void update(size_t max_message_count = -1, bool wait = true) {
+            if (wait)
+                incoming_messages_.wait();
+
             size_t message_count = 0;
             while (message_count < max_message_count && !incoming_messages_.empty()) {
                 auto msg = incoming_messages_.pop_front();
@@ -108,9 +111,11 @@ namespace blcl::net {
         }
 
     protected:
-        virtual bool on_client_connect(std::shared_ptr<connection<T>> client) = 0;
-        virtual void on_client_disconnect(std::shared_ptr<connection<T>> client) = 0;
-        virtual void on_message(std::shared_ptr<connection<T>> client, message<T>& msg) = 0;
+        virtual bool on_client_connect(std::shared_ptr<connection<T>> client) { return false; }
+        virtual void on_client_disconnect(std::shared_ptr<connection<T>> client) { }
+        virtual void on_message(std::shared_ptr<connection<T>> client, message<T>& msg) { }
+    public:
+        virtual void on_client_validated(std::shared_ptr<connection<T>> client) { }
     protected:
         tsqueue<owned_message<T>> incoming_messages_;
         std::deque<std::shared_ptr<connection<T>>> connections_;
