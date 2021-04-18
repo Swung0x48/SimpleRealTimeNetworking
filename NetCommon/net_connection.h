@@ -56,9 +56,9 @@ namespace blcl::net {
         void send(const message<T>& msg) {
             asio::post(asio_context_,
                 [this, msg]() {
-                    bool to_write_message = !outgoing_messages_.empty();
+                    bool writing_message = !outgoing_messages_.empty();
                     outgoing_messages_.push_back(msg);
-                    if (to_write_message)
+                    if (!writing_message)
                         write_header();
             });
         }

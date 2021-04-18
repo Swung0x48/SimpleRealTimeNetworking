@@ -27,7 +27,7 @@ protected:
     void on_message(std::shared_ptr<blcl::net::connection<MsgType>> client, blcl::net::message<MsgType>& msg) override {
         switch (msg.header.id) {
             case MsgType::ServerPing:
-                std::cout << "[INFO] " << client->get_id() << ": Server Ping\n";
+                std::cout << "[INFO] " << client->get_id() << ": Server Ping" << std::endl;
                 client->send(msg);
                 break;
         }
@@ -38,7 +38,7 @@ int main() {
     CustomServer server(60000);
     server.start();
 
-    while (true) {
+    while (1) {
         server.update();
     }
 

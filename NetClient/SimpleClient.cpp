@@ -25,10 +25,17 @@ public:
 int main() {
     CustomClient c;
     c.connect("127.0.0.1", 60000);
+    std::cout << "[INFO] Sending a ping..." << std::endl;
+    c.ping_server();
+//    std::cout << "[INFO] Sending a ping..." << "\n";
+//    c.ping_server();
+//    std::cout << "[INFO] Sending a ping..." << "\n";
+//    c.ping_server();
 
-    std::thread([&]() {
-        bool will_quit = false;
+    bool will_quit = false;
+    auto thread = std::thread([&]() {
         while (!will_quit) {
+
             if (c.is_connected()) {
                 if (!c.get_incoming_messages().empty()) {
                     auto msg = c.get_incoming_messages().pop_front().msg;
@@ -39,20 +46,21 @@ int main() {
                             std::chrono::system_clock::time_point sent;
                             msg >> sent;
                             std::chrono::duration<double> elapsed = now - sent;
-                            std::cout << "Ping: " << elapsed.count() << "\n";
+                            std::cout << "Ping: " << elapsed.count() << std::endl;
                             break;
                     }
                 }
             } else {
-                std::cout << "[WARN] Server is going down...\n";
+                std::cout << "[WARN] Server is going down..." << std::endl;
                 will_quit = true;
             }
         }
-    }).detach();
+    });
 
-    while (true) {
-        char a; std::cin >> a;
-        std::cout << a;
+    while (!will_quit) {
+        int a; std::cin >> a;
         c.ping_server();
     }
+    if (thread.joinable())
+        thread.join();
 }
