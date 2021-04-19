@@ -18,6 +18,11 @@ namespace blcl::net {
             return body.size();
         }
 
+        void clear() {
+            header.size = 0;
+            body.clear();
+        }
+
         friend std::ostream& operator<<(std::ostream& os, const message<T>& msg) {
             os << "ID: " << int(msg.header.id) << " Size: " << msg.header.size;
             return os;
@@ -29,8 +34,7 @@ namespace blcl::net {
                     "Type of data is not in standard layout thus not able to be serialized.");
 
             size_t i = msg.body.size();
-            std::cout << sizeof(Data) << " " << sizeof(Data) << "\n";
-            // Resize to vector by the size of data being pushed
+            // Reserve space for the data to be pushed
             msg.body.resize(msg.body.size() + sizeof(Data));
             // Copy the data into the newly allocated vector space
             std::memcpy(msg.body.data() + i, &data, sizeof(data));

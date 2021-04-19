@@ -21,7 +21,7 @@ public:
         send(msg);
     }
 
-    void send_message_to_all() {
+    void broadcast_message() {
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::MessageAll;
         send(msg);
@@ -78,7 +78,7 @@ int main() {
         if (a == 1)
             c.ping_server();
         if (a == 2)
-            c.send_message_to_all();
+            c.broadcast_message();
     }
     if (thread.joinable())
         thread.join();
