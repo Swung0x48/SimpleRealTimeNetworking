@@ -36,11 +36,11 @@ protected:
                 break;
             }
             case MsgType::MessageAll: {
-                std::cout << "[INFO] " << client->get_id() << ": Message All\n";
-                blcl::net::message<MsgType> msg;
+                //std::cout << "[INFO] [" << std::chrono::system_clock::now().time_since_epoch().count() << "] " << client->get_id() << ": Broadcast\n";
+//                blcl::net::message<MsgType> msg;
                 msg.header.id = MsgType::ServerMessage;
                 msg << client->get_id();
-                send_mesage_to_all_clients(msg, client);
+                broadcast_message(msg, client);
             }
         }
     }

@@ -79,7 +79,7 @@ namespace blcl::net {
                     std::remove(connections_.begin(), connections_.end(), client), connections_.end());
         }
 
-        void send_mesage_to_all_clients(const message<T>& msg, std::shared_ptr<connection<T>> ignored_client = nullptr) {
+        void broadcast_message(const message<T>& msg, std::shared_ptr<connection < T>> ignored_client = nullptr) {
             bool invalid_client_exists = false;
 
             for (auto& client: connections_) {

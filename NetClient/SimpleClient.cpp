@@ -1,6 +1,19 @@
 #include <iostream>
 #include <blcl_net.h>
 
+struct Vector {
+    float x; float y; float z;
+};
+struct Quad {
+    float x; float y; float z; float w;
+};
+
+struct State {
+    uint32_t type;
+    Vector pos;
+    Quad rot;
+};
+
 enum class MsgType: uint32_t {
     ServerAccept,
     ServerDeny,
@@ -19,11 +32,17 @@ public:
         std::cout << sizeof(now) << "\n";
         msg << now;
         send(msg);
+        disconnect();
     }
 
     void broadcast_message() {
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::MessageAll;
+        State state;
+        state.type = 0;
+        state.pos = {40, 15, -153};
+        state.rot = {0, 0, 0, 0 };
+        msg << state;
         send(msg);
     }
 };
@@ -61,7 +80,16 @@ int main() {
                         case MsgType::ServerMessage: {
                             uint32_t client_id;
                             msg >> client_id;
-                            std::cout << "[INFO] Hello from client " << client_id << "\n";
+                            std::cout << "Client ID: " << client_id << " Size: " << msg.size() << std::endl;
+
+                            Vector pos;
+                            Quad rot;
+                            int ball = 0;
+                            msg >> rot >> pos >> ball;
+                            std::cout << "[INFO] Client " << client_id << ": " <<
+                            "Ball: " << ball << " "
+                            "(" << pos.x << ", " << pos.y << ", " << pos.z << "), " <<
+                            "(" << rot.x << ", " << rot.y << ", " << rot.z << ", " << rot.w << ")" << "\n";
                             break;
                         }
                     }
