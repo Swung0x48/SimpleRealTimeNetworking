@@ -25,18 +25,18 @@ protected:
     }
 
     void on_client_disconnect(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
-        std::cout << "[INFO] Client " << client->get_id() << " has been disconnected.\n";
+        std::cout << "[INFO] Client " << client->get_id() << " has been disconnected." << std::endl;
     }
 
     void on_message(std::shared_ptr<blcl::net::connection<MsgType>> client, blcl::net::message<MsgType>& msg) override {
         switch (msg.header.id) {
             case MsgType::ServerPing: {
-                std::cout << "[INFO] " << client->get_id() << ": Server Ping" << "\n";
+                //std::cout << "[INFO] " << client->get_id() << ": Server Ping" << std::endl;
                 client->send(msg);
                 break;
             }
             case MsgType::MessageAll: {
-                //std::cout << "[INFO] [" << std::chrono::system_clock::now().time_since_epoch().count() << "] " << client->get_id() << ": Broadcast\n";
+               // std::cout << "[INFO] [" << std::chrono::system_clock::now().time_since_epoch().count() << "] " << client->get_id() << ": Broadcast\n";
 //                blcl::net::message<MsgType> msg;
                 msg.header.id = MsgType::ServerMessage;
                 msg << client->get_id();
