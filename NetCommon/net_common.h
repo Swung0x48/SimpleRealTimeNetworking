@@ -1,6 +1,7 @@
 #ifndef SIMPLENETWORKING_NET_COMMON_H
 #define SIMPLENETWORKING_NET_COMMON_H
 
+#include <iostream>
 #include <deque>
 #include <mutex>
 #include <thread>
