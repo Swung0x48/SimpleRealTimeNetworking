@@ -124,14 +124,14 @@ namespace blcl::net {
         }
 
         void broadcast_message(const message<T>& msg,
-                               const std::unordered_set<std::shared_ptr<connection<T>>>& client_to_send = std::unordered_set<std::shared_ptr<connection<T>>>(),
-                               std::shared_ptr<connection<T>> initiator = nullptr,
+                               const std::unordered_set<std::shared_ptr<connection<T>>>& clients_to_send,
+                               std::shared_ptr<connection<T>> initiator,
                                bool ignore_initiator = true) {
             bool invalid_client_exists = false;
 
             for (auto& client: connections_) {
                 if (client && client->is_connected()) {
-                    if (client_to_send.find(client) != client_to_send.end() && // Current client in client_to_send
+                    if (clients_to_send.find(client) != clients_to_send.end() && // Current client in clients_to_send
                         !(ignore_initiator && client == initiator)) // Not initiator or does not ignore initiator -> true
                         client->send(msg);
                 } else {

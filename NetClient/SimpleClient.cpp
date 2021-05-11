@@ -21,7 +21,13 @@ enum class MsgType: uint32_t {
     BallState,
     UsernameReq,
     Username,
-    UsernameAck
+    UsernameAck,
+    EnterMap,
+    FinishLevel,
+    ExitMap,
+    MapHashReq,
+    MapHash,
+    MapHashAck
 };
 
 class CustomClient: public blcl::net::client_interface<MsgType> {
@@ -113,6 +119,11 @@ int main() {
                             assert(msg.size() <= USERNAME_MAX_LENGTH_WITH_NULL && msg.size() > 0);
                             std::memcpy(username, msg.body.data(), msg.size());
                             std::cout << username << std::endl;
+                            break;
+                        }
+                        default: {
+                            std::cout << "[WARN] Invalid message received." << std::endl;
+
                             break;
                         }
                     }
