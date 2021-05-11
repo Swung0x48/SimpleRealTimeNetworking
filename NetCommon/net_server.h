@@ -79,12 +79,60 @@ namespace blcl::net {
                     std::remove(connections_.begin(), connections_.end(), client), connections_.end());
         }
 
-        void broadcast_message(const message<T>& msg, std::shared_ptr<connection < T>> ignored_client = nullptr) {
+        std::unordered_set<std::shared_ptr<connection<T>>> get_online_clients() {
+            bool invalid_client_exists = false;
+            std::unordered_set<std::shared_ptr<connection<T>>> clients;
+            clients.reserve(connections_.size());
+
+            for (auto& client: connections_) {
+                if (client && client->is_connected()) {
+                    clients.emplace(client);
+                } else {
+                    on_client_disconnect(client);
+                    client.reset();
+                    invalid_client_exists = true;
+                }
+            }
+
+            if (invalid_client_exists)
+                connections_.erase(
+                        std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
+
+            return clients;
+        }
+
+        std::unordered_set<uint64_t> get_online_clients_id() {
+            bool invalid_client_exists = false;
+            std::unordered_set<uint64_t> clients;
+            clients.reserve(connections_.size());
+
+            for (auto& client: connections_) {
+                if (client && client->is_connected()) {
+                    clients.emplace(client->get_id());
+                } else {
+                    on_client_disconnect(client);
+                    client.reset();
+                    invalid_client_exists = true;
+                }
+            }
+
+            if (invalid_client_exists)
+                connections_.erase(
+                        std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
+
+            return clients;
+        }
+
+        void broadcast_message(const message<T>& msg,
+                               const std::unordered_set<std::shared_ptr<connection<T>>>& client_to_send = std::unordered_set<std::shared_ptr<connection<T>>>(),
+                               std::shared_ptr<connection<T>> initiator = nullptr,
+                               bool ignore_initiator = true) {
             bool invalid_client_exists = false;
 
             for (auto& client: connections_) {
                 if (client && client->is_connected()) {
-                    if (client != ignored_client)
+                    if (client_to_send.find(client) != client_to_send.end() && // Current client in client_to_send
+                        !(ignore_initiator && client == initiator)) // Not initiator or does not ignore initiator -> true
                         client->send(msg);
                 } else {
                     on_client_disconnect(client);
@@ -122,7 +170,7 @@ namespace blcl::net {
         asio::io_context context_;
         std::thread ctx_thread_;
         asio::ip::tcp::acceptor asio_acceptor_;
-        uint32_t id_counter_ = 10000;
+        uint64_t id_counter_ = 10000;
     };
 }
 

@@ -19,8 +19,7 @@ namespace blcl::net {
 
         connection(owner parent, asio::io_context& asio_context, asio::ip::tcp::socket socket, tsqueue<owned_message<T>>& incoming_messages)
             : asio_context_(asio_context), socket_(std::move(socket)), incoming_messages_(incoming_messages),
-            owner_type_(parent)
-        {
+            owner_type_(parent) {
             owner_type_ = parent;
             if (owner_type_ == owner::server) {
                 checksum_out_ = uint64_t(std::chrono::system_clock::now().time_since_epoch().count());
@@ -33,11 +32,11 @@ namespace blcl::net {
         }
         virtual ~connection() = default;
 
-        uint32_t get_id() const {
+        uint64_t get_id() const {
             return id;
         }
 
-        void connect_to_client(blcl::net::server_interface<T>* server, uint32_t uid = 0) {
+        void connect_to_client(blcl::net::server_interface<T>* server, uint64_t uid = 0) {
             if (owner_type_ == owner::server) {
                 if (socket_.is_open()) {
                     id = uid;
@@ -192,7 +191,7 @@ namespace blcl::net {
 
                                 read_header();
                             } else {
-                                std::cout << "[WARN] Client disconnected: challenge-reponse failed." << std::endl;
+                                std::cout << "[WARN] Client disconnected: challenge-response failed." << std::endl;
                                 socket_.close();
                             }
                         } else {
@@ -213,7 +212,7 @@ namespace blcl::net {
         tsqueue<owned_message<T>>& incoming_messages_;
         message<T> current_incoming_message_;
         owner owner_type_ = owner::server;
-        uint32_t id = 0;
+        uint64_t id = 0;
 
         uint64_t checksum_out_ = 0;
         uint64_t checksum_in_ = 0;

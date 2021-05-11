@@ -18,30 +18,42 @@ enum class MsgType: uint32_t {
     ServerAccept,
     ServerDeny,
     ServerPing,
-    MessageAll,
-    ServerMessage
+    BallState,
+    UsernameReq,
+    Username,
+    UsernameAck
 };
 
 class CustomClient: public blcl::net::client_interface<MsgType> {
+private:
+    std::string username_ = "Swung";
 public:
+    void send_username() {
+        blcl::net::message<MsgType> msg;
+        msg.header.id = MsgType::Username;
+        uint8_t username[USERNAME_MAX_LENGTH_WITH_NULL];
+        strcpy(reinterpret_cast<char *>(username), username_.c_str());
+        msg << username;
+        send(msg);
+    }
+
     void ping_server() {
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::ServerPing;
 
         std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-        std::cout << sizeof(now) << "\n";
+//        std::cout << sizeof(now) << "\n";
         msg << now;
         send(msg);
-        disconnect();
     }
 
     void broadcast_message() {
         blcl::net::message<MsgType> msg;
-        msg.header.id = MsgType::MessageAll;
+        msg.header.id = MsgType::BallState;
         State state;
         state.type = 0;
-        state.pos = {40, 15, -153};
-        state.rot = {0, 0, 0, 0 };
+        state.pos = { 40, 15, -153 };
+        state.rot = { 0, 0, 0, 0 };
         msg << state;
         send(msg);
     }
@@ -77,7 +89,7 @@ int main() {
                                       << " ms\n";
                             break;
                         }
-                        case MsgType::ServerMessage: {
+                        case MsgType::BallState: {
                             uint32_t client_id;
                             msg >> client_id;
                             std::cout << "Client ID: " << client_id << " Size: " << msg.size() << std::endl;
@@ -90,6 +102,17 @@ int main() {
                             "Ball: " << ball << " "
                             "(" << pos.x << ", " << pos.y << ", " << pos.z << "), " <<
                             "(" << rot.x << ", " << rot.y << ", " << rot.z << ", " << rot.w << ")" << "\n";
+                            break;
+                        }
+                        case MsgType::UsernameReq: {
+                            c.send_username();
+                            break;
+                        }
+                        case MsgType::UsernameAck: {
+                            uint8_t username[USERNAME_MAX_LENGTH_WITH_NULL];
+                            assert(msg.size() <= USERNAME_MAX_LENGTH_WITH_NULL && msg.size() > 0);
+                            std::memcpy(username, msg.body.data(), msg.size());
+                            std::cout << username << std::endl;
                             break;
                         }
                     }
