@@ -79,12 +79,12 @@ namespace blcl::net {
                     std::remove(connections_.begin(), connections_.end(), client), connections_.end());
         }
 
-        void broadcast_message(const message<T>& msg, std::shared_ptr<connection < T>> ignored_client = nullptr) {
+        void broadcast_message(const message<T>& msg, std::shared_ptr<connection<T>> ignored_client = nullptr) {
             bool invalid_client_exists = false;
 
             for (auto& client: connections_) {
                 if (client && client->is_connected()) {
-                    if (client != ignored_client)
+                    if (client != ignored_client && client->is_validated())
                         client->send(msg);
                 } else {
                     on_client_disconnect(client);
