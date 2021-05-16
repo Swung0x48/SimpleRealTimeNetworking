@@ -34,13 +34,17 @@ namespace blcl::net {
         virtual ~connection() = default;
 
         uint32_t get_id() const {
-            return id;
+            return id_;
+        }
+
+        bool is_validated() const {
+            return validated_;
         }
 
         void connect_to_client(blcl::net::server_interface<T>* server, uint32_t uid = 0) {
             if (owner_type_ == owner::server) {
                 if (socket_.is_open()) {
-                    id = uid;
+                    id_ = uid;
                     write_validation();
                     read_validation(server);
 //                    read_header();
@@ -86,14 +90,20 @@ namespace blcl::net {
                 [this](std::error_code ec, std::size_t length) {
                     if (!ec) {
                         if (current_incoming_message_.header.size > 0) {
+                            // Assert if msg size is gonna exceed MAX_MSG_SIZE. If so, log it (for now).
+                            if (current_incoming_message_.header.size > MAX_MSG_SIZE) {
+                                std::cout << "[WARN]: " << "A message exceeded MAX_MSG_SIZE = " << MAX_MSG_SIZE << "." << std::endl
+                                          << "[WARN]: It's gonna allocate " << current_incoming_message_.header.size << "bytes." << std::endl
+                                          << "[WARN]: Its ID: " << (uint32_t) current_incoming_message_.header.id << std::endl;
+                            }
                             current_incoming_message_.body.resize(current_incoming_message_.header.size);
                             read_body();
                         } else {
                             add_to_incoming_messages_queue();
                         }
                     } else {
-                        std::cout << "[WARN] " << id << ": Read header failed.\n";
-                        std::cout << "[WARN] " << id << ": " << ec.message() << "\n";
+                        std::cout << "[WARN] " << id_ << ": Read header failed.\n";
+                        std::cout << "[WARN] " << id_ << ": " << ec.message() << "\n";
                         socket_.close();
                     }
             });
@@ -106,8 +116,8 @@ namespace blcl::net {
                     if (!ec) {
                         add_to_incoming_messages_queue();
                     } else {
-                        std::cout << "[WARN] " << id << ": Read body failed.\n";
-                        std::cout << "[WARN] " << id << ": " << ec.message() << "\n";
+                        std::cout << "[WARN] " << id_ << ": Read body failed.\n";
+                        std::cout << "[WARN] " << id_ << ": " << ec.message() << "\n";
                         socket_.close();
                     }
             });
@@ -126,8 +136,8 @@ namespace blcl::net {
                                 write_header();
                         }
                     } else {
-                        std::cout << "[WARN] " << id << ": Write header failed.\n";
-                        std::cout << "[WARN] " << id << ": " << ec.message() << "\n";
+                        std::cout << "[WARN] " << id_ << ": Write header failed.\n";
+                        std::cout << "[WARN] " << id_ << ": " << ec.message() << "\n";
                         socket_.close();
                     }
             });
@@ -142,8 +152,8 @@ namespace blcl::net {
                         if (!outgoing_messages_.empty())
                             write_header();
                     } else {
-                        std::cout << "[WARN] " << id << ": Write body failed.\n";
-                        std::cout << "[WARN] " << id << ": " << ec.message() << "\n";
+                        std::cout << "[WARN] " << id_ << ": Write body failed.\n";
+                        std::cout << "[WARN] " << id_ << ": " << ec.message() << "\n";
                         socket_.close();
                     }
             });
@@ -188,6 +198,7 @@ namespace blcl::net {
                         if (owner_type_ == owner::server) {
                             if (checksum_in_ == expected_checksum_) {
                                 std::cout << "[INFO] Challenge-response passed." << std::endl;
+                                validated_ = true;
                                 server->on_client_validated(this->shared_from_this());
 
                                 read_header();
@@ -213,7 +224,8 @@ namespace blcl::net {
         tsqueue<owned_message<T>>& incoming_messages_;
         message<T> current_incoming_message_;
         owner owner_type_ = owner::server;
-        uint32_t id = 0;
+        uint32_t id_ = 0;
+        bool validated_ = false;
 
         uint64_t checksum_out_ = 0;
         uint64_t checksum_in_ = 0;
