@@ -26,7 +26,7 @@ class CustomServer: public blcl::net::server_interface<MsgType> {
 private:
     std::unordered_map<uint64_t, ClientData> users_; // Possible race condition writing to this.
 public:
-    CustomServer(uint16_t port) : blcl::net::server_interface<MsgType>(port) {
+    explicit CustomServer(uint16_t port) : blcl::net::server_interface<MsgType>(port) {
 
     }
 
@@ -108,7 +108,7 @@ int main() {
     CustomServer server(60000);
     server.start();
 
-    while (1) {
+    while (true) {
         server.update();
     }
 
