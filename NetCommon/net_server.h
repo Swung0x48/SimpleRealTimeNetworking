@@ -57,7 +57,7 @@ namespace blcl::net {
                                 connections_.back()->connect_to_client(this, id_counter_++);
                                 std::cout << "[INFO] Connection established. Connection ID: " << connections_.back()->get_id() << '\n';
                             } else {
-                                std::cout << "[WARN] Client disconnected.\n";
+                                std::cout << "[WARN] Client disconnected on checking preconditions (likely fail2ban).\n";
                             }
                         } else {
                             std::cout << "[WARN] Connection error occurred: " << ec.message() << "\n";

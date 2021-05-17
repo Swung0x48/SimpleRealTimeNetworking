@@ -36,6 +36,14 @@ namespace blcl::net {
             return id;
         }
 
+        bool is_validated() const {
+            return validated_;
+        }
+
+        asio::ip::tcp::socket::endpoint_type get_endpoint() const {
+            return socket_.remote_endpoint();
+        }
+
         void connect_to_client(blcl::net::server_interface<T>* server, uint64_t uid = 0) {
             if (owner_type_ == owner::server) {
                 if (socket_.is_open()) {
@@ -85,6 +93,12 @@ namespace blcl::net {
                 [this](std::error_code ec, std::size_t length) {
                     if (!ec) {
                         if (current_incoming_message_.header.size > 0) {
+                            // Assert if msg size is gonna exceed MAX_MSG_SIZE. If so, log it (for now).
+                            if (current_incoming_message_.header.size > MAX_MSG_SIZE) {
+                                std::cout << "[WARN]: " << "A message exceeded MAX_MSG_SIZE = " << MAX_MSG_SIZE << "." << std::endl
+                                          << "[WARN]: It's gonna allocate " << current_incoming_message_.header.size << "bytes." << std::endl
+                                          << "[WARN]: Its ID: " << (uint32_t) current_incoming_message_.header.id << std::endl;
+                            }
                             current_incoming_message_.body.resize(current_incoming_message_.header.size);
                             read_body();
                         } else {
@@ -187,6 +201,7 @@ namespace blcl::net {
                         if (owner_type_ == owner::server) {
                             if (checksum_in_ == expected_checksum_) {
                                 std::cout << "[INFO] Challenge-response passed." << std::endl;
+                                validated_ = true;
                                 server->on_client_validated(this->shared_from_this());
 
                                 read_header();
@@ -213,6 +228,7 @@ namespace blcl::net {
         message<T> current_incoming_message_;
         owner owner_type_ = owner::server;
         uint64_t id = 0;
+        bool validated_ = false;
 
         uint64_t checksum_out_ = 0;
         uint64_t checksum_in_ = 0;

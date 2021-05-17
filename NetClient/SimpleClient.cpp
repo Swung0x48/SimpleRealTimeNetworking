@@ -69,11 +69,6 @@ int main() {
     CustomClient c;
     c.connect("127.0.0.1", 60000);
 
-//    std::cout << "[INFO] Sending a ping..." << "\n";
-//    c.ping_server();
-//    std::cout << "[INFO] Sending a ping..." << "\n";
-//    c.ping_server();
-
     bool will_quit = false;
     auto thread = std::thread([&]() {
         while (!will_quit) {

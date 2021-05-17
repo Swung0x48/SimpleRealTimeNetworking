@@ -14,4 +14,6 @@
 #include <asio/ts/buffer.hpp>
 #include <asio/ts/internet.hpp>
 
+constexpr uint32_t MAX_MSG_SIZE = 512;
+
 #endif //SIMPLENETWORKING_NET_COMMON_H
