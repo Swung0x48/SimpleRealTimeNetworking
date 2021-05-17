@@ -32,7 +32,6 @@ public:
         std::cout << sizeof(now) << "\n";
         msg << now;
         send(msg);
-        disconnect();
     }
 
     void broadcast_message() {
@@ -50,11 +49,6 @@ public:
 int main() {
     CustomClient c;
     c.connect("127.0.0.1", 60000);
-
-//    std::cout << "[INFO] Sending a ping..." << "\n";
-//    c.ping_server();
-//    std::cout << "[INFO] Sending a ping..." << "\n";
-//    c.ping_server();
 
     bool will_quit = false;
     auto thread = std::thread([&]() {

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <blcl_net.h>
+#include <unordered_map>
 
 enum class MsgType: uint32_t {
     ServerAccept,
@@ -10,6 +11,17 @@ enum class MsgType: uint32_t {
 };
 
 class CustomServer: public blcl::net::server_interface<MsgType> {
+private:
+    std::unordered_map<std::string, uint64_t> fail2ban_counter_;
+    uint64_t max_fail_attempt = 10;
+    bool is_banned(const std::shared_ptr<blcl::net::connection<MsgType>>& client) {
+        if (fail2ban_counter_[client->get_endpoint().address().to_string()] > max_fail_attempt)
+            return true;
+
+        ++fail2ban_counter_[client->get_endpoint().address().to_string()];
+        return false;
+    }
+
 public:
     CustomServer(uint16_t port) : blcl::net::server_interface<MsgType>(port) {
 
@@ -17,6 +29,10 @@ public:
 
 protected:
     bool on_client_connect(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
+        if (is_banned(client)) {
+            return false;
+        }
+
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::ServerAccept;
         client->send(msg);

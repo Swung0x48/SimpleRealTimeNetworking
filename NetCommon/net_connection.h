@@ -41,6 +41,10 @@ namespace blcl::net {
             return validated_;
         }
 
+        asio::ip::tcp::socket::endpoint_type get_endpoint() const {
+            return socket_.remote_endpoint();
+        }
+
         void connect_to_client(blcl::net::server_interface<T>* server, uint32_t uid = 0) {
             if (owner_type_ == owner::server) {
                 if (socket_.is_open()) {
