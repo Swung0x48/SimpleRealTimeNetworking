@@ -61,6 +61,7 @@ protected:
     }
 
     void on_client_validated(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
+        fail2ban_counter_[client->get_endpoint().address().to_string()] = 0;
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::UsernameReq;
         msg << max_username_length_;
