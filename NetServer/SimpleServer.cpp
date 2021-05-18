@@ -27,6 +27,9 @@ class CustomServer: public blcl::net::server_interface<MsgType> {
 private:
     std::unordered_map<std::string, uint64_t> fail2ban_counter_;
     uint64_t max_fail_attempt = 10;
+    std::unordered_map<uint64_t, ClientData> users_; // Possible race condition writing to this.
+    uint32_t max_username_length_  = 30;
+
     bool is_banned(const std::shared_ptr<blcl::net::connection<MsgType>>& client) {
         if (fail2ban_counter_[client->get_endpoint().address().to_string()] > max_fail_attempt)
             return true;
@@ -34,8 +37,6 @@ private:
         ++fail2ban_counter_[client->get_endpoint().address().to_string()];
         return false;
     }
-
-    std::unordered_map<uint64_t, ClientData> users_; // Possible race condition writing to this.
 public:
     explicit CustomServer(uint16_t port) : blcl::net::server_interface<MsgType>(port) {
 
@@ -62,8 +63,7 @@ protected:
     void on_client_validated(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::UsernameReq;
-        uint32_t size = 30;
-        msg << size;
+        msg << max_username_length_;
         client->send(msg);
     }
 
@@ -114,7 +114,7 @@ protected:
                 break;
             }
             case MsgType::ExitMap: {
-                users_[client->get_id()].map_hash = std::string();
+                users_[client->get_id()].map_hash = "";
                 break;
             }
             default: {
