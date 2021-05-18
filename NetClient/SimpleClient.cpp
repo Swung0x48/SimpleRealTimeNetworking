@@ -34,12 +34,13 @@ class CustomClient: public blcl::net::client_interface<MsgType> {
 private:
     std::string username_ = "Swung";
 public:
+    uint32_t max_username_length_ = 0;
     void send_username() {
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::Username;
-        uint8_t username[USERNAME_MAX_LENGTH_WITH_NULL];
-        strcpy(reinterpret_cast<char *>(username), username_.c_str());
-        msg << username;
+        uint8_t username_bin_[max_username_length_ + 1];
+        strncpy(reinterpret_cast<char *>(username_bin_), username_.c_str(), max_username_length_);
+        msg.write(username_bin_, strlen(reinterpret_cast<char *>(username_bin_)) + 1);
         send(msg);
     }
 
@@ -106,19 +107,20 @@ int main() {
                             break;
                         }
                         case MsgType::UsernameReq: {
+                            msg >> c.max_username_length_;
                             c.send_username();
                             break;
                         }
                         case MsgType::UsernameAck: {
-                            uint8_t username[USERNAME_MAX_LENGTH_WITH_NULL];
-                            assert(msg.size() <= USERNAME_MAX_LENGTH_WITH_NULL && msg.size() > 0);
-                            std::memcpy(username, msg.body.data(), msg.size());
-                            std::cout << username << std::endl;
+//                            std::unique_ptr<uint8_t[], std::default_delete<uint8_t[]>> username_bin_ = std::make_unique<uint8_t[]>(msg.size() + 1);
+
+//                            uint8_t username[USERNAME_MAX_LENGTH_WITH_NULL];
+//                            assert(msg.size() <= USERNAME_MAX_LENGTH_WITH_NULL && msg.size() > 0);
+                            std::cout << reinterpret_cast<const char*>(msg.body.data()) << std::endl;
                             break;
                         }
                         default: {
-                            std::cout << "[WARN] Invalid message received." << std::endl;
-
+                            std::cerr << "[ERR]: Unknown Message ID:" << (uint32_t) msg.header.id << std::endl;
                             break;
                         }
                     }

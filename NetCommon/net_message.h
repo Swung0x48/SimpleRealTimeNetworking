@@ -33,16 +33,27 @@ namespace blcl::net {
             static_assert(std::is_standard_layout<Data>::value,
                     "Type of data is not in standard layout thus not able to be serialized.");
 
-            size_t i = msg.body.size();
-            // Reserve space for the data to be pushed
-            msg.body.resize(msg.body.size() + sizeof(Data));
-            // Copy the data into the newly allocated vector space
-            std::memcpy(msg.body.data() + i, &data, sizeof(data));
-            // Recalculate msg size
-            msg.header.size = msg.size();
+            msg.write(&data, sizeof(data));
+
+//            // Reserve space for the data to be pushed
+//            msg.body.resize(msg.body.size() + sizeof(Data));
+//            // Copy the data into the newly allocated vector space
+//            std::memcpy(msg.body.data() + i, &data, sizeof(data));
+//            // Recalculate msg size
+//            msg.header.size = msg.size();
 
             // Return the resulting msg so that it could be chain-called.
             return msg;
+        }
+
+        void write(const void* data, size_t size) {
+            size_t old_size = body.size();
+            // Reserve space for the data to be pushed
+            body.resize(body.size() + size);
+            // Copy the data into the newly allocated vector space
+            std::memcpy(body.data() + old_size, data, size);
+            // Recalculate msg size
+            header.size = this->size();
         }
 
         template <typename Data>

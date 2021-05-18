@@ -62,13 +62,14 @@ protected:
     void on_client_validated(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::UsernameReq;
+        uint32_t size = 30;
+        msg << size;
         client->send(msg);
     }
 
     void on_message(std::shared_ptr<blcl::net::connection<MsgType>> client, blcl::net::message<MsgType>& msg) override {
         switch (msg.header.id) {
             case MsgType::ServerPing: {
-                //std::cout << "[INFO] " << client->get_id() << ": Server Ping" << std::endl;
                 client->send(msg);
                 break;
             }
@@ -84,7 +85,7 @@ protected:
                 ClientData data;
                 data.username = std::string(reinterpret_cast<const char *>(username));
                 users_[client->get_id()] = data;
-                std::cout << data.username << " joined the server." << std::endl;
+                std::cout << "[INFO] " << data.username << " joined the server." << std::endl;
 
                 msg.header.id = MsgType::UsernameAck;
                 client->send(msg);
@@ -109,11 +110,15 @@ protected:
                 break;
             }
             case MsgType::FinishLevel: {
-                broadcast_message(msg, get_online_clients(), client);
+                broadcast_message(msg, get_online_clients(), client, true);
                 break;
             }
             case MsgType::ExitMap: {
                 users_[client->get_id()].map_hash = std::string();
+                break;
+            }
+            default: {
+                std::cerr << "[ERR]: Unknown Message ID:" << (uint32_t) msg.header.id << std::endl;
                 break;
             }
         }
