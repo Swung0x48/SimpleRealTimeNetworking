@@ -18,6 +18,7 @@ enum class MsgType: uint32_t {
     ServerAccept,
     ServerDeny,
     ServerPing,
+    ClientDisconnect,
     BallState,
     UsernameReq,
     Username,
@@ -29,6 +30,7 @@ enum class MsgType: uint32_t {
     MapHash,
     MapHashAck
 };
+
 
 class CustomClient: public blcl::net::client_interface<MsgType> {
 private:
@@ -117,6 +119,13 @@ int main() {
 //                            uint8_t username[USERNAME_MAX_LENGTH_WITH_NULL];
 //                            assert(msg.size() <= USERNAME_MAX_LENGTH_WITH_NULL && msg.size() > 0);
                             std::cout << reinterpret_cast<const char*>(msg.body.data()) << std::endl;
+                            break;
+                        }
+                        case MsgType::ClientDisconnect: {
+                            uint64_t client_id; msg >> client_id;
+                            char username_bin_[c.max_username_length_ + 1];
+                            strcpy(username_bin_, reinterpret_cast<const char *>(msg.body.data()));
+                            std::cout << "[INFO] " << '[' << client_id << "] " << username_bin_ << " left the game." << std::endl;
                             break;
                         }
                         default: {

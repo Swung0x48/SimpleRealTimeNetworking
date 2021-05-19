@@ -80,82 +80,63 @@ namespace blcl::net {
         }
 
         std::unordered_set<std::shared_ptr<connection<T>>> get_online_clients() {
-            bool invalid_client_exists = false;
+            //bool invalid_client_exists = false;
             std::unordered_set<std::shared_ptr<connection<T>>> clients;
-            clients.reserve(connections_.size());
 
             for (auto& client: connections_) {
                 if (client && client->is_connected()) {
                     clients.emplace(client);
                 } else {
-                    on_client_disconnect(client);
-                    client.reset();
-                    invalid_client_exists = true;
+                    dead_client_exists_ = true;
                 }
             }
 
-            if (invalid_client_exists)
-                connections_.erase(
-                        std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
+//            if (invalid_client_exists)
+//                connections_.erase(
+//                        std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
 
             return clients;
         }
 
         std::unordered_set<uint64_t> get_online_clients_id() {
-            bool invalid_client_exists = false;
-            std::unordered_set<uint64_t> clients;
-            clients.reserve(connections_.size());
-
-            for (auto& client: connections_) {
-                if (client && client->is_connected()) {
-                    clients.emplace(client->get_id());
-                } else {
-                    on_client_disconnect(client);
-                    client.reset();
-                    invalid_client_exists = true;
-                }
+            std::unordered_set<uint64_t> clients_id;
+            auto clients = get_online_clients();
+            for (auto& client: clients) {
+                clients_id.emplace(client->get_id());
             }
-
-            if (invalid_client_exists)
-                connections_.erase(
-                        std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
-
-            return clients;
+            return clients_id;
         }
 
         void broadcast_message(const message<T>& msg,
                                const std::unordered_set<std::shared_ptr<connection<T>>>& clients_to_send,
                                std::shared_ptr<connection<T>> initiator,
                                bool ignore_initiator = true) {
-            bool invalid_client_exists = false;
-
-            for (auto& client: connections_) {
+            for (auto& client: clients_to_send) {
                 if (client && client->is_connected()) {
-                    if (clients_to_send.find(client) != clients_to_send.end() && // Current client in clients_to_send
-                        !(ignore_initiator && client == initiator)) // Not initiator or does not ignore initiator -> true
+                    if (!(ignore_initiator && client == initiator)) // Returns true if is not initiator or does not ignore initiator
                         client->send(msg);
                 } else {
-                    on_client_disconnect(client);
-                    client.reset();
-                    invalid_client_exists = true;
+                    dead_client_exists_ = true;
                 }
             }
-
-            if (invalid_client_exists)
-                connections_.erase(
-                        std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
         }
 
         void update(size_t max_message_count = -1, bool wait = true) {
             if (wait)
                 incoming_messages_.wait();
 
+            if (dead_client_exists_)
+                purge_dead_clients();
+
             size_t message_count = 0;
             while (message_count < max_message_count && !incoming_messages_.empty()) {
                 auto msg = incoming_messages_.pop_front();
                 on_message(msg.remote, msg.msg);
-                message_count++;
+                ++message_count;
             }
+
+            if (dead_client_exists_)
+                purge_dead_clients();
         }
 
     protected:
@@ -171,6 +152,20 @@ namespace blcl::net {
         std::thread ctx_thread_;
         asio::ip::tcp::acceptor asio_acceptor_;
         uint64_t id_counter_ = 10000;
+        bool dead_client_exists_ = false;
+
+        void purge_dead_clients() {
+            for (auto& client: connections_) {
+                if (!client || !client->is_connected()) {
+                    on_client_disconnect(client);
+                    client.reset();
+                }
+            }
+            connections_.erase(
+                    std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
+
+            dead_client_exists_ = false;
+        }
     };
 }
 

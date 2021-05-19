@@ -6,6 +6,7 @@ enum class MsgType: uint32_t {
     ServerAccept,
     ServerDeny,
     ServerPing,
+    ClientDisconnect,
     BallState,
     UsernameReq,
     Username,
@@ -57,6 +58,11 @@ protected:
 
     void on_client_disconnect(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
         std::cout << "[INFO] Client " << client->get_id() << " has been disconnected." << std::endl;
+        blcl::net::message<MsgType> msg;
+        msg.header.id = MsgType::ClientDisconnect;
+        msg.write(users_[client->get_id()].username.c_str(), users_[client->get_id()].username.length() + 1);
+        msg << client->get_id();
+        broadcast_message(msg, get_online_clients(), client, true);
         users_.erase(client->get_id());
     }
 
