@@ -28,8 +28,9 @@ class CustomServer: public blcl::net::server_interface<MsgType> {
 private:
     std::unordered_map<std::string, uint64_t> fail2ban_counter_;
     uint64_t max_fail_attempt = 10;
-    std::unordered_map<uint64_t, ClientData> users_; // Possible race condition writing to this.
-    uint32_t max_username_length_  = 30;
+    std::unordered_map<std::shared_ptr<blcl::net::connection<MsgType>>, ClientData> online_clients_;
+    std::unordered_map<std::string, std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>>> clients_in_map_;  // maphash, id
+    uint32_t max_username_length_ = 30;
 
     bool is_banned(const std::shared_ptr<blcl::net::connection<MsgType>>& client) {
         if (fail2ban_counter_[client->get_endpoint().address().to_string()] > max_fail_attempt)
@@ -60,10 +61,10 @@ protected:
         std::cout << "[INFO] Client " << client->get_id() << " has been disconnected." << std::endl;
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::ClientDisconnect;
-        msg.write(users_[client->get_id()].username.c_str(), users_[client->get_id()].username.length() + 1);
+        msg.write(online_clients_[client].username.c_str(), online_clients_[client].username.length() + 1);
         msg << client->get_id();
         broadcast_message(msg, get_online_clients(), client, true);
-        users_.erase(client->get_id());
+        online_clients_.erase(client);
     }
 
     void on_client_validated(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
@@ -72,6 +73,14 @@ protected:
         msg.header.id = MsgType::UsernameReq;
         msg << max_username_length_;
         client->send(msg);
+    }
+
+    std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>> get_clients_in_map(const std::string& map_hash) {
+        return clients_in_map_.at(map_hash);
+    }
+
+    const std::string& get_map_hash(const std::shared_ptr<blcl::net::connection<MsgType>>& client) const {
+        return online_clients_.at(client).map_hash;
     }
 
     void on_message(std::shared_ptr<blcl::net::connection<MsgType>> client, blcl::net::message<MsgType>& msg) override {
@@ -87,11 +96,10 @@ protected:
             }
             case MsgType::Username: {
                 uint8_t username[msg.size()];
-                //assert(msg.size() <= USERNAME_MAX_LENGTH_WITH_NULL && msg.size() > 0);
                 std::memcpy(username, msg.body.data(), msg.size());
                 ClientData data;
                 data.username = std::string(reinterpret_cast<const char *>(username));
-                users_[client->get_id()] = data;
+                online_clients_[client] = data;
                 std::cout << "[INFO] " << data.username << " joined the server." << std::endl;
 
                 msg.header.id = MsgType::UsernameAck;
@@ -107,9 +115,11 @@ protected:
             case MsgType::MapHash: {
                 uint8_t hash_bin[msg.size()];
                 std::memcpy(hash_bin, msg.body.data(), msg.size());
+                std::string map_hash = std::string(reinterpret_cast<const char *>(hash_bin));
 
-                // Assuming user is in users_, update its map hash
-                users_[client->get_id()].map_hash = std::string(reinterpret_cast<const char *>(hash_bin));
+                // Assuming user is in online_clients_, update its map hash
+                online_clients_[client].map_hash = std::string(reinterpret_cast<const char *>(hash_bin));
+                clients_in_map_[map_hash].emplace(client);
 
                 msg.clear();
                 msg.header.id = MsgType::MapHashAck;
@@ -117,11 +127,12 @@ protected:
                 break;
             }
             case MsgType::FinishLevel: {
-                broadcast_message(msg, get_online_clients(), client, true);
+                broadcast_message(msg, get_clients_in_map(get_map_hash(client)), client, true);
                 break;
             }
             case MsgType::ExitMap: {
-                users_[client->get_id()].map_hash = "";
+                clients_in_map_[online_clients_[client].map_hash].erase(client);
+                online_clients_[client].map_hash = "";
                 break;
             }
             default: {
@@ -135,9 +146,8 @@ protected:
 int main() {
     CustomServer server(60000);
     server.start();
-
     while (true) {
-        server.update();
+        server.update(64);
     }
 
     return 0;

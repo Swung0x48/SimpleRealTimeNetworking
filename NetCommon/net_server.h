@@ -80,7 +80,6 @@ namespace blcl::net {
         }
 
         std::unordered_set<std::shared_ptr<connection<T>>> get_online_clients() {
-            //bool invalid_client_exists = false;
             std::unordered_set<std::shared_ptr<connection<T>>> clients;
 
             for (auto& client: connections_) {
@@ -90,10 +89,6 @@ namespace blcl::net {
                     dead_client_exists_ = true;
                 }
             }
-
-//            if (invalid_client_exists)
-//                connections_.erase(
-//                        std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
 
             return clients;
         }

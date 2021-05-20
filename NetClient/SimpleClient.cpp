@@ -51,7 +51,6 @@ public:
         msg.header.id = MsgType::ServerPing;
 
         std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-//        std::cout << sizeof(now) << "\n";
         msg << now;
         send(msg);
     }
@@ -94,7 +93,7 @@ int main() {
                             break;
                         }
                         case MsgType::BallState: {
-                            uint32_t client_id;
+                            uint64_t client_id;
                             msg >> client_id;
                             std::cout << "Client ID: " << client_id << " Size: " << msg.size() << std::endl;
 
@@ -114,10 +113,6 @@ int main() {
                             break;
                         }
                         case MsgType::UsernameAck: {
-//                            std::unique_ptr<uint8_t[], std::default_delete<uint8_t[]>> username_bin_ = std::make_unique<uint8_t[]>(msg.size() + 1);
-
-//                            uint8_t username[USERNAME_MAX_LENGTH_WITH_NULL];
-//                            assert(msg.size() <= USERNAME_MAX_LENGTH_WITH_NULL && msg.size() > 0);
                             std::cout << reinterpret_cast<const char*>(msg.body.data()) << std::endl;
                             break;
                         }
@@ -129,7 +124,7 @@ int main() {
                             break;
                         }
                         default: {
-                            std::cerr << "[ERR]: Unknown Message ID:" << (uint32_t) msg.header.id << std::endl;
+                            std::cerr << "[ERR]: Unknown Message ID: " << (uint32_t) msg.header.id << std::endl;
                             break;
                         }
                     }
