@@ -21,7 +21,7 @@ enum class MsgType: uint32_t {
 
 struct ClientData {
     std::string username;
-    std::string map_hash;
+    uint32_t map_hash;
 };
 
 class CustomServer: public blcl::net::server_interface<MsgType> {
@@ -29,7 +29,7 @@ private:
     std::unordered_map<std::string, uint64_t> fail2ban_counter_;
     uint64_t max_fail_attempt = 10;
     std::unordered_map<std::shared_ptr<blcl::net::connection<MsgType>>, ClientData> online_clients_;
-    std::unordered_map<std::string, std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>>> clients_in_map_;  // maphash, id
+    std::unordered_map<uint32_t , std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>>> clients_in_map_;  // maphash, id
     uint32_t max_username_length_ = 30;
 
     bool is_banned(const std::shared_ptr<blcl::net::connection<MsgType>>& client) {
@@ -75,11 +75,11 @@ protected:
         client->send(msg);
     }
 
-    std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>> get_clients_in_map(const std::string& map_hash) {
+    std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>> get_clients_in_map(const uint32_t map_hash) {
         return clients_in_map_.at(map_hash);
     }
 
-    const std::string& get_map_hash(const std::shared_ptr<blcl::net::connection<MsgType>>& client) const {
+    const uint32_t get_map_hash(const std::shared_ptr<blcl::net::connection<MsgType>>& client) const {
         return online_clients_.at(client).map_hash;
     }
 
@@ -113,13 +113,11 @@ protected:
                 break;
             }
             case MsgType::MapHash: {
-                uint8_t hash_bin[msg.size()];
-                std::memcpy(hash_bin, msg.body.data(), msg.size());
-                std::string map_hash = std::string(reinterpret_cast<const char *>(hash_bin));
-
+                uint32_t crc32;
+                msg >> crc32;
                 // Assuming user is in online_clients_, update its map hash
-                online_clients_[client].map_hash = std::string(reinterpret_cast<const char *>(hash_bin));
-                clients_in_map_[map_hash].emplace(client);
+                online_clients_[client].map_hash = crc32;
+                clients_in_map_[crc32].emplace(client);
 
                 msg.clear();
                 msg.header.id = MsgType::MapHashAck;
@@ -132,7 +130,7 @@ protected:
             }
             case MsgType::ExitMap: {
                 clients_in_map_[online_clients_[client].map_hash].erase(client);
-                online_clients_[client].map_hash = "";
+                online_clients_[client].map_hash = 0ul;
                 break;
             }
             default: {
