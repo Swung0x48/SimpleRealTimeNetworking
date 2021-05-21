@@ -21,7 +21,7 @@ enum class MsgType: uint32_t {
 
 struct ClientData {
     std::string username;
-    uint32_t map_hash;
+    std::string map_hash;
 };
 
 class CustomServer: public blcl::net::server_interface<MsgType> {
@@ -29,7 +29,7 @@ private:
     std::unordered_map<std::string, uint64_t> fail2ban_counter_;
     uint64_t max_fail_attempt = 10;
     std::unordered_map<std::shared_ptr<blcl::net::connection<MsgType>>, ClientData> online_clients_;
-    std::unordered_map<uint32_t , std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>>> clients_in_map_;  // maphash, id
+    std::unordered_map<std::string, std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>>> clients_in_map_;  // maphash, id
     uint32_t max_username_length_ = 30;
 
     bool is_banned(const std::shared_ptr<blcl::net::connection<MsgType>>& client) {
@@ -75,11 +75,13 @@ protected:
         client->send(msg);
     }
 
-    std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>> get_clients_in_map(const uint32_t map_hash) {
+    std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>> get_clients_in_map(const std::string& map_hash) {
+        if (map_hash.empty())
+            return std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>>();
         return clients_in_map_.at(map_hash);
     }
 
-    const uint32_t get_map_hash(const std::shared_ptr<blcl::net::connection<MsgType>>& client) const {
+    const std::string& get_map_hash(const std::shared_ptr<blcl::net::connection<MsgType>>& client) const {
         return online_clients_.at(client).map_hash;
     }
 
@@ -90,8 +92,9 @@ protected:
                 break;
             }
             case MsgType::BallState: {
-                msg << client->get_id();
-                broadcast_message(msg, get_online_clients(), client);
+                uint64_t client_id = client->get_id();
+                msg << client_id;
+                broadcast_message(msg, get_clients_in_map(get_map_hash(client)), client, true);
                 break;
             }
             case MsgType::Username: {
@@ -102,7 +105,7 @@ protected:
                 online_clients_[client] = data;
                 std::cout << "[INFO] " << data.username << " joined the server." << std::endl;
 
-                msg.header.id = MsgType::UsernameAck;
+                msg.header.id = MsgType::Username;
                 client->send(msg);
                 break;
             }
@@ -113,11 +116,10 @@ protected:
                 break;
             }
             case MsgType::MapHash: {
-                uint32_t crc32;
-                msg >> crc32;
                 // Assuming user is in online_clients_, update its map hash
-                online_clients_[client].map_hash = crc32;
-                clients_in_map_[crc32].emplace(client);
+                std::string hash = std::string(reinterpret_cast<const char*>(msg.body.data()));
+                online_clients_[client].map_hash = hash;
+                clients_in_map_[hash].emplace(client);
 
                 msg.clear();
                 msg.header.id = MsgType::MapHashAck;
@@ -129,8 +131,9 @@ protected:
                 break;
             }
             case MsgType::ExitMap: {
+                broadcast_message(msg, get_clients_in_map(get_map_hash(client)), client, true);
                 clients_in_map_[online_clients_[client].map_hash].erase(client);
-                online_clients_[client].map_hash = 0ul;
+                online_clients_[client].map_hash = "";
                 break;
             }
             default: {
