@@ -85,9 +85,10 @@ namespace blcl::net {
             for (auto& client: connections_) {
                 if (client && client->is_connected()) {
                     clients.emplace(client);
-                } else {
-                    dead_client_exists_ = true;
                 }
+//                else {
+//                    dead_client_exists_ = true;
+//                }
             }
 
             return clients;
@@ -110,9 +111,10 @@ namespace blcl::net {
                 if (client && client->is_connected()) {
                     if (!(ignore_initiator && client == initiator)) // Returns true if is not initiator or does not ignore initiator
                         client->send(msg);
-                } else {
-                    dead_client_exists_ = true;
                 }
+//                else {
+//                    dead_client_exists_ = true;
+//                }
             }
         }
 
@@ -120,8 +122,8 @@ namespace blcl::net {
             if (wait)
                 incoming_messages_.wait();
 
-            if (dead_client_exists_)
-                purge_dead_clients();
+//            if (dead_client_exists_)
+            purge_dead_clients();
 
             size_t message_count = 0;
             while (message_count < max_message_count && !incoming_messages_.empty()) {
@@ -130,8 +132,8 @@ namespace blcl::net {
                 ++message_count;
             }
 
-            if (dead_client_exists_)
-                purge_dead_clients();
+//            if (dead_client_exists_)
+//                purge_dead_clients();
         }
 
     protected:
@@ -147,7 +149,7 @@ namespace blcl::net {
         std::thread ctx_thread_;
         asio::ip::tcp::acceptor asio_acceptor_;
         uint64_t id_counter_ = 10000;
-        bool dead_client_exists_ = false;
+        //bool dead_client_exists_ = false;
 
         void purge_dead_clients() {
             for (auto& client: connections_) {
@@ -159,7 +161,7 @@ namespace blcl::net {
             connections_.erase(
                     std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
 
-            dead_client_exists_ = false;
+//            dead_client_exists_ = false;
         }
     };
 }
