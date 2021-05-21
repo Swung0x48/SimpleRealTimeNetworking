@@ -96,7 +96,7 @@ namespace blcl::net {
                             // Assert if msg size is gonna exceed MAX_MSG_SIZE. If so, log it (for now).
                             if (current_incoming_message_.header.size > MAX_MSG_SIZE) {
                                 std::cout << "[WARN]: " << "A message exceeded MAX_MSG_SIZE = " << MAX_MSG_SIZE << "." << std::endl
-                                          << "[WARN]: It's gonna allocate " << current_incoming_message_.header.size << "bytes." << std::endl
+                                          << "[WARN]: It's gonna allocate " << current_incoming_message_.header.size << " bytes." << std::endl
                                           << "[WARN]: Its ID: " << (uint32_t) current_incoming_message_.header.id << std::endl;
                             }
                             current_incoming_message_.body.resize(current_incoming_message_.header.size);
