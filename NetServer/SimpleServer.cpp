@@ -115,6 +115,7 @@ protected:
                 msg.clear();
                 msg.header.id = MsgType::MapHashReq;
                 client->send(msg);
+
                 break;
             }
             case MsgType::MapHash: {
@@ -126,6 +127,21 @@ protected:
                 msg.clear();
                 msg.header.id = MsgType::MapHashAck;
                 client->send(msg);
+                for (const auto& c: get_clients_in_map(hash)) {
+                    msg.clear();
+                    msg.header.id = MsgType::Username;
+                    auto* username = online_clients_[c].username.c_str();
+                    msg.write(username, strlen(username) + 1);
+                    msg << c->get_id();
+                    client->send(msg);
+                }
+
+                msg.clear();
+                msg.header.id = MsgType::Username;
+                auto* username = online_clients_[client].username.c_str();
+                msg.write(username, strlen(username) + 1);
+                msg << client->get_id();
+                broadcast_message(msg, get_clients_in_map(get_map_hash(client)), client, true);
                 break;
             }
             case MsgType::FinishLevel: {

@@ -36,6 +36,7 @@ enum class MsgType: uint32_t {
 class CustomClient: public blcl::net::client_interface<MsgType> {
 private:
     std::string username_ = "Spectator001";
+    std::unordered_map<uint64_t, std::string> active_clients_;
 public:
     uint32_t max_username_length_ = 0;
     void send_username() {
@@ -65,6 +66,10 @@ public:
         state.rot = { 0, 0, 0, 0 };
         msg << state;
         send(msg);
+    }
+
+    void add_active_client(uint64_t client, const std::string& player_name) {
+        active_clients_[client] = player_name;
     }
 };
 
@@ -114,7 +119,10 @@ int main() {
                             break;
                         }
                         case MsgType::Username: {
-                            std::cout << "[INFO] " << reinterpret_cast<const char *>(msg.body.data()) << std::endl;
+                            uint64_t client_id; msg >> client_id;
+                            std::string name(reinterpret_cast<const char *>(msg.body.data()));
+                            c.add_active_client(client_id, name);
+                            std::cout << "[INFO] " << client_id << " " << name << std::endl;
                             break;
                         }
                         case MsgType::UsernameAck: {
