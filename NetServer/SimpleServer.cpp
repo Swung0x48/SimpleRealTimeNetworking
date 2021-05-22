@@ -7,6 +7,7 @@ enum class MsgType: uint32_t {
     ServerDeny,
     ServerPing,
     ClientDisconnect,
+
     BallState,
     UsernameReq,
     Username,
@@ -16,7 +17,8 @@ enum class MsgType: uint32_t {
     ExitMap,
     MapHashReq,
     MapHash,
-    MapHashAck
+    MapHashAck,
+    HideAllPeerBalls
 };
 
 struct ClientData {
@@ -105,7 +107,7 @@ protected:
                 online_clients_[client] = data;
                 std::cout << "[INFO] " << data.username << " joined the server." << std::endl;
 
-                msg.header.id = MsgType::Username;
+                msg.header.id = MsgType::UsernameAck;
                 client->send(msg);
                 break;
             }
@@ -131,6 +133,10 @@ protected:
                 break;
             }
             case MsgType::ExitMap: {
+                uint64_t client_id = client->get_id();
+                std::cout << "[INFO] " << "Client " << client_id << " has exited this map.";
+
+                msg << client_id;
                 broadcast_message(msg, get_clients_in_map(get_map_hash(client)), client, true);
                 clients_in_map_[online_clients_[client].map_hash].erase(client);
                 online_clients_[client].map_hash = "";
