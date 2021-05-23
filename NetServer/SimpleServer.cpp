@@ -128,6 +128,8 @@ protected:
                 msg.header.id = MsgType::MapHashAck;
                 client->send(msg);
                 for (const auto& c: get_clients_in_map(hash)) {
+                    if (c == client || c == nullptr) // In case of an invalid client
+                        continue;
                     msg.clear();
                     msg.header.id = MsgType::Username;
                     auto* username = online_clients_[c].username.c_str();
@@ -150,7 +152,7 @@ protected:
             }
             case MsgType::ExitMap: {
                 uint64_t client_id = client->get_id();
-                std::cout << "[INFO] " << "Client " << client_id << " has exited this map.";
+                std::cout << "[INFO] " << "Client " << client_id << " has exited this map." << std::endl;
 
                 msg << client_id;
                 broadcast_message(msg, get_clients_in_map(get_map_hash(client)), client, true);
