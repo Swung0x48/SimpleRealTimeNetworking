@@ -172,7 +172,7 @@ protected:
 };
 
 int main() {
-    CustomServer server(60000);
+    CustomServer server(19198);
     server.start();
     while (true) {
         server.update(64);
