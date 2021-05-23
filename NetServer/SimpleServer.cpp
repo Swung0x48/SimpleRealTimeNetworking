@@ -66,7 +66,8 @@ protected:
         msg.write(online_clients_[client].username.c_str(), online_clients_[client].username.length() + 1);
         msg << client->get_id();
         broadcast_message(msg, get_online_clients(), client, true);
-        online_clients_.erase(client);
+        clients_in_map_[online_clients_[client].map_hash].erase(client); // If client is in a map, remove it.
+        online_clients_.erase(client); // Remove client from online clients
     }
 
     void on_client_validated(std::shared_ptr<blcl::net::connection<MsgType>> client) override {
@@ -127,6 +128,8 @@ protected:
                 msg.clear();
                 msg.header.id = MsgType::MapHashAck;
                 client->send(msg);
+
+                // Send the name of players which also in this map
                 for (const auto& c: get_clients_in_map(hash)) {
                     if (c == client || c == nullptr) // In case of an invalid client
                         continue;
