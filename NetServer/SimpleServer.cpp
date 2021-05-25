@@ -178,7 +178,9 @@ protected:
                 break;
             }
             default: {
-                std::cerr << "[ERR]: Unknown Message ID:" << (uint32_t) msg.header.id << std::endl;
+                std::cerr << "[ERR]: Unknown message identifier:" << (uint32_t) msg.header.id << '\n';
+                std::cerr << "[ERR]: Message size: " << msg.size() << '\n';
+                std::cerr << "[ERR]: Sent from: " << client->get_id() << std::endl;
                 break;
             }
         }
