@@ -18,7 +18,8 @@ enum class MsgType: uint32_t {
     MapHashReq,
     MapHash,
     MapHashAck,
-    HideAllPeerBalls
+
+    PlayerJoined
 };
 
 struct ClientData {
@@ -110,6 +111,19 @@ protected:
 
                 msg.header.id = MsgType::UsernameAck;
                 client->send(msg);
+                msg.header.id = MsgType::PlayerJoined;
+                broadcast_message(msg, get_online_clients(), client, true);
+
+//                msg.header.id = MsgType::Username;
+//                for (auto& c: online_clients_) {
+//                    if (c.first == client || c.first == nullptr) // In case of an invalid client
+//                        continue;
+//                    msg.clear();
+//                    msg.write(c.second.username.c_str(), c.second.username.length() + 1);
+//                    msg << c.first->get_id();
+//                    client->send(msg);
+//                }
+
                 break;
             }
             case MsgType::EnterMap: {
@@ -172,7 +186,7 @@ protected:
 };
 
 int main() {
-    CustomServer server(19198);
+    CustomServer server(60000);
     server.start();
     while (true) {
         server.update(64);

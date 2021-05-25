@@ -30,6 +30,8 @@ enum class MsgType: uint32_t {
     MapHashReq,
     MapHash,
     MapHashAck,
+
+    PlayerJoined
 };
 
 
@@ -148,6 +150,9 @@ int main() {
                             uint64_t client_id; msg >> client_id;
                             std::cout << "[INFO] " << "Client " << client_id << " has exited this map." << std::endl;
                             break;
+                        }
+                        case MsgType::PlayerJoined: {
+                            std::cout << "[INFO] " << reinterpret_cast<const char *>(msg.body.data()) << " joined the game.";
                         }
                         default: {
                             std::cerr << "[ERR]: Unknown Message ID: " << (uint32_t) msg.header.id << std::endl;
