@@ -55,6 +55,7 @@ protected:
 
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::ServerAccept;
+        msg << client->get_id();
         client->send(msg);
 
         return true;
@@ -164,6 +165,7 @@ protected:
                 break;
             }
             case MsgType::FinishLevel: {
+                msg << client->get_id();
                 broadcast_message(msg, get_clients_in_map(get_map_hash(client)), client, true);
                 break;
             }

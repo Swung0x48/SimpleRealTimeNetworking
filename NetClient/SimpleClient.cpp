@@ -77,7 +77,7 @@ public:
 
 int main() {
     CustomClient c;
-    c.connect("127.0.0.1", 60000);
+    c.connect("139.224.23.40", 60000);
 
     bool will_quit = false;
     auto thread = std::thread([&]() {

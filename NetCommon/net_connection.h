@@ -173,9 +173,9 @@ namespace blcl::net {
 
         uint64_t encode(uint64_t bin) {
             auto* slice = reinterpret_cast<uint8_t *>(&bin);
-            for (int i = 0; i < sizeof(bin) / sizeof(uint8_t); i++) {
+            for (size_t i = 0; i < sizeof(bin) / sizeof(uint8_t); i++) {
                 slice[i] = (slice[i] << 3 | slice[i] >> 5);
-                slice[i] = -(slice[i] ^ uint8_t(0xAF));
+                slice[i] = -(slice[i] ^ uint8_t(14));
             }
             return bin;
         }
