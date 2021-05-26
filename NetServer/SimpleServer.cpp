@@ -6,6 +6,7 @@ enum class MsgType: uint32_t {
     ServerAccept,
     ServerDeny,
     ServerPing,
+    ClientValidated,
     ClientDisconnect,
 
     BallState,
@@ -55,7 +56,6 @@ protected:
 
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::ServerAccept;
-        msg << client->get_id();
         client->send(msg);
 
         return true;
@@ -77,6 +77,10 @@ protected:
         blcl::net::message<MsgType> msg;
         msg.header.id = MsgType::UsernameReq;
         msg << max_username_length_;
+        client->send(msg);
+        msg.clear();
+        msg.header.id = MsgType::ClientValidated;
+        msg << client->get_id();
         client->send(msg);
     }
 
