@@ -30,7 +30,7 @@ struct ClientData {
 class CustomServer: public blcl::net::server_interface<MsgType> {
 private:
     std::unordered_map<std::string, uint64_t> fail2ban_counter_;
-    uint64_t max_fail_attempt = 10;
+    uint64_t max_fail_attempt = 50;
     std::unordered_map<std::shared_ptr<blcl::net::connection<MsgType>>, ClientData> online_clients_;
     std::unordered_map<std::string, std::unordered_set<std::shared_ptr<blcl::net::connection<MsgType>>>> clients_in_map_;  // maphash, id
     uint32_t max_username_length_ = 30;
