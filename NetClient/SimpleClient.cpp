@@ -18,6 +18,7 @@ enum class MsgType: uint32_t {
     ServerAccept,
     ServerDeny,
     ServerPing,
+    ClientValidated,
     ClientDisconnect,
 
     BallState,
@@ -90,6 +91,11 @@ int main() {
                     switch (msg.header.id) {
                         case MsgType::ServerAccept: {
                             std::cout << "[INFO] Server has accepted a connection.\n";
+                            break;
+                        }
+                        case MsgType::ClientValidated: {
+                            uint64_t id; msg >> id;
+                            std::cout << "[INFO] Assigned client ID: " << id << std::endl;
                             break;
                         }
                         case MsgType::ServerPing: {
@@ -176,7 +182,12 @@ int main() {
             "611906738d64d8b4d4f8d9378ccfd811b3a029ca66b6101039008f8554b4c9ba"
     };
     while (!will_quit) {
-        int a; std::cin >> a;
+        int a;
+        std::cin >> a;
+        if (a == 0) {
+            will_quit = true;
+            continue;
+        }
         if (a == 1)
             c.ping_server();
         if (a == 2)
