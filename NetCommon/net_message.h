@@ -61,6 +61,8 @@ namespace blcl::net {
             static_assert(std::is_standard_layout<Data>::value,
                           "Type of data is not in standard layout thus not able to be deserialized.");
 
+            if (msg.body.size() < sizeof(Data))
+                throw std::logic_error("The message body has already been exhausted.");
             size_t i = msg.body.size() - sizeof(Data);
             // Copy the data from the vector to the variable
             std::memcpy(&data, msg.body.data() + i, sizeof(Data));
