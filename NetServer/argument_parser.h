@@ -12,7 +12,8 @@ private:
 
     static bool is_int(const std::string& s) {
         for (char i : s) {
-            if (isdigit(i) == false) return false;
+            if (!isdigit(i))
+                return false;
         };
         return true;
     };
