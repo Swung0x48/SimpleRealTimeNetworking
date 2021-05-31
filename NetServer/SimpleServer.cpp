@@ -195,9 +195,9 @@ protected:
 };
 
 int main(int argc, char *argv[]) {
-    args::init(argc, argv);
-    if (args::port == 0) return 1;
-    CustomServer server(args::port);
+    argument_parser parser(argc, argv);
+    if (parser.port == 0) return 1;
+    CustomServer server(parser.port);
     server.start();
     while (true) {
         server.update(64);
