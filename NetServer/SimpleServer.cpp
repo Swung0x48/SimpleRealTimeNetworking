@@ -1,6 +1,7 @@
 #include <iostream>
 #include <blcl_net.h>
 #include <unordered_map>
+#include "argument_parser.h"
 
 enum class MsgType: uint32_t {
     ServerAccept,
@@ -193,8 +194,10 @@ protected:
     }
 };
 
-int main() {
-    CustomServer server(60000);
+int main(int argc, char *argv[]) {
+    args::init(argc, argv);
+    if (args::port == 0) return 1;
+    CustomServer server(args::port);
     server.start();
     while (true) {
         server.update(64);
