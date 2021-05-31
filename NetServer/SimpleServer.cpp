@@ -196,7 +196,8 @@ protected:
 
 int main(int argc, char *argv[]) {
     argument_parser parser(argc, argv);
-    if (parser.port == 0) return 1;
+    if (parser.port == 0)
+        return 1;
     CustomServer server(parser.port);
     server.start();
     while (true) {

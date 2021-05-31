@@ -2,13 +2,13 @@
 
 class argument_parser {
 public:
-    uint16_t port = 60000;
+    uint16_t port = 0;
     argument_parser(int argc, char *argv[]) {
-        name = std::string(argv[0]);
-        parse_port(argc, argv);
+        executable_path = std::string(argv[0]);
+        parse(argc, argv);
     };
 private:
-    std::string name;
+    std::string executable_path;
 
     static bool is_int(const std::string& s) {
         for (char i : s) {
@@ -16,14 +16,14 @@ private:
                 return false;
         };
         return true;
-    };
+    }
 
     void help() {
-        std::cout << "Usage: " << name << " [-p PORT]" << std::endl;
+        std::cout << "Usage: " << executable_path << " [-p PORT]" << std::endl;
         port = 0;
-    };
+    }
 
-    void parse_port(int argc, char *argv[]) {
+    void parse(int argc, char **argv) {
         for (int i = 1; i < argc; ++i) {
             if (std::string(argv[i]) == "-p") {
                 if (i + 1 < argc) {
@@ -34,7 +34,7 @@ private:
                     } else {
                         port = std::stoi(port_s);
                         if (port < 1 || port > 65535) {
-                            std::cerr << "Invalid port (must be between 1 and 65535)." << std::endl;
+                            std::cerr << "Invalid port (must between 1 and 65535)." << std::endl;
                             port = 0;
                             return;
                         }
@@ -43,7 +43,7 @@ private:
                 } else {
                     std::cerr << "-p option requires one argument." << std::endl;
                     help();
-                };
+                }
                 return;
             } else if (std::string(argv[i]) == "--help") {
                 help();
@@ -51,6 +51,6 @@ private:
             }
         }
         std::cout << "[WARN] Port unspecified. Falling back to default value: 60000." << std::endl;
-        std::cout << "[INFO] " << "To specify which port to bind to, run " << name << " --help" << std::endl;
-    };
+        std::cout << "[INFO] " << "To specify which port to bind to, run " << executable_path << " --help" << std::endl;
+    }
 };
