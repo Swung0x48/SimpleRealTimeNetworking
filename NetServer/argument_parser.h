@@ -1,30 +1,32 @@
 #include <iostream>
 
-namespace args {
+class argument_parser {
+public:
     uint16_t port = 60000;
+    argument_parser(int argc, char *argv[]) {
+        name = std::string(argv[0]);
+        parse_port(argc, argv);
+    };
+private:
     std::string name;
 
-    bool is_int(std::string s) {
+    static bool is_int(std::string s) {
         for (int i = 0; i < s.length(); i ++) {
             if (isdigit(s[i]) == false) return false;
         };
         return true;
     };
 
-    void help() {
+    static void help() {
         std::cout << "Usage: " << name << " [-p PORT]" << std::endl;
         port = 0;
     };
 
-    void default_port() {
-        std::cout << "[INFO] Port unspecified. Using default 60000." << std::endl;
-    };
-
     void parse_port(int argc, char *argv[]) {
-        for (int i = 1; i < argc; i ++) {
+        for (int i = 1; i < argc; ++i) {
             if (std::string(argv[i]) == "-p") {
                 if (i + 1 < argc) {
-                    std::string port_s = std::string(argv[++ i]);
+                    std::string port_s = std::string(argv[++i]);
                     if (!is_int(port_s)) {
                         std::cerr << "Invalid port (must be an integer)." << std::endl;
                         help();
@@ -47,11 +49,6 @@ namespace args {
                 return;
             };
         };
-        default_port();
-    };
-
-    void init(int argc, char *argv[]) {
-        name = std::string(argv[0]);
-        parse_port(argc, argv);
+        std::cout << "[INFO] Port unspecified. Using default 60000." << std::endl;
     };
 };
