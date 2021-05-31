@@ -86,9 +86,6 @@ namespace blcl::net {
                 if (client && client->is_connected()) {
                     clients.emplace(client);
                 }
-//                else {
-//                    dead_client_exists_ = true;
-//                }
             }
 
             return clients;
@@ -112,18 +109,14 @@ namespace blcl::net {
                     if (!(ignore_initiator && client == initiator)) // Returns true if is not initiator or does not ignore initiator
                         client->send(msg);
                 }
-//                else {
-//                    dead_client_exists_ = true;
-//                }
             }
         }
 
         void update(size_t max_message_count = -1, bool wait = true) {
+            purge_dead_clients();
+
             if (wait)
                 incoming_messages_.wait();
-
-//            if (dead_client_exists_)
-            purge_dead_clients();
 
             size_t message_count = 0;
             while (message_count < max_message_count && !incoming_messages_.empty()) {
@@ -131,26 +124,12 @@ namespace blcl::net {
                 on_message(msg.remote, msg.msg);
                 ++message_count;
             }
-
-//            if (dead_client_exists_)
-//                purge_dead_clients();
         }
 
     protected:
         virtual bool on_client_connect(std::shared_ptr<connection<T>> client) { return false; }
         virtual void on_client_disconnect(std::shared_ptr<connection<T>> client) { }
         virtual void on_message(std::shared_ptr<connection<T>> client, message<T>& msg) { }
-    public:
-        virtual void on_client_validated(std::shared_ptr<connection<T>> client) { }
-    protected:
-        tsqueue<owned_message<T>> incoming_messages_;
-        std::deque<std::shared_ptr<connection<T>>> connections_;
-        asio::io_context context_;
-        std::thread ctx_thread_;
-        asio::ip::tcp::acceptor asio_acceptor_;
-        uint64_t id_counter_ = 10000;
-        //bool dead_client_exists_ = false;
-
         void purge_dead_clients() {
             for (auto& client: connections_) {
                 if (!client || !client->is_connected()) {
@@ -160,9 +139,16 @@ namespace blcl::net {
             }
             connections_.erase(
                     std::remove(connections_.begin(), connections_.end(), nullptr), connections_.end());
-
-//            dead_client_exists_ = false;
         }
+    public:
+        virtual void on_client_validated(std::shared_ptr<connection<T>> client) { }
+    protected:
+        tsqueue<owned_message<T>> incoming_messages_;
+        std::deque<std::shared_ptr<connection<T>>> connections_;
+        asio::io_context context_;
+        std::thread ctx_thread_;
+        asio::ip::tcp::acceptor asio_acceptor_;
+        uint64_t id_counter_ = 10000;
     };
 }
 

@@ -10,14 +10,14 @@ public:
 private:
     std::string name;
 
-    static bool is_int(std::string s) {
-        for (int i = 0; i < s.length(); i ++) {
-            if (isdigit(s[i]) == false) return false;
+    static bool is_int(const std::string& s) {
+        for (char i : s) {
+            if (isdigit(i) == false) return false;
         };
         return true;
     };
 
-    static void help() {
+    void help() {
         std::cout << "Usage: " << name << " [-p PORT]" << std::endl;
         port = 0;
     };
@@ -36,9 +36,9 @@ private:
                             std::cerr << "Invalid port (must be between 1 and 65535)." << std::endl;
                             port = 0;
                             return;
-                        };
+                        }
                         std::cout << "[INFO] Using port " << port << "." << std::endl;
-                    };
+                    }
                 } else {
                     std::cerr << "-p option requires one argument." << std::endl;
                     help();
@@ -47,8 +47,9 @@ private:
             } else if (std::string(argv[i]) == "--help") {
                 help();
                 return;
-            };
-        };
-        std::cout << "[INFO] Port unspecified. Using default 60000." << std::endl;
+            }
+        }
+        std::cout << "[WARN] Port unspecified. Falling back to default value: 60000." << std::endl;
+        std::cout << "[INFO] " << "To specify which port to bind to, run " << name << " --help" << std::endl;
     };
 };
